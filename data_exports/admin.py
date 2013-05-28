@@ -64,7 +64,7 @@ def sql_csv_export(modeladmin, request, queryset):
     Serve the folder to the user
     '''
     cursor = connection.cursor()
-    outfile_dir = "/tmp/%s/" % (str(request['CSRF_COOKIE']))
+    outfile_dir = "/tmp/%s/" % (str(request['csrftoken']))
     # Make the directory
     os.mkdir(outfile_dir)
     for export in queryset:
