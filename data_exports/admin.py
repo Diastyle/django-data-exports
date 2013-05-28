@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import datetime
 import os
 import zipfile
 import StringIO
@@ -65,7 +64,7 @@ def sql_csv_export(modeladmin, request, queryset):
     Serve the folder to the user
     '''
     cursor = connection.cursor()
-    outfile_dir = "/tmp/%s/" % (str(request.session.id)+str(datetime.datetime.now()))
+    outfile_dir = "/tmp/%s/" % (str(request['CSRF_COOKIE']))
     # Make the directory
     os.mkdir(outfile_dir)
     for export in queryset:
