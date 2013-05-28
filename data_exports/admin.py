@@ -9,6 +9,7 @@ from data_exports.models import Export, Column, Format
 from data_exports.forms import ColumnForm, ColumnFormSet
 from django.db import connection
 from django.http import HttpResponse
+from django.template.defaultfilters import slugify
 
 class ColumnInline(admin.TabularInline):
     extra = 0
@@ -73,7 +74,7 @@ def sql_csv_export(modeladmin, request, queryset):
         fields = export.column_set.all().order_by("order").values_list('column', flat=True )
         fields_string = ','.join(fields)
         table_name = export.model.model
-        outfile_path = outfile_dir+export.name
+        outfile_path = outfile_dir+slugify(export.name)
         sql_phrase = '''
                      SELECT %s INTO OUTFILE %s FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
                      LINES TERMINATED BY '\n' FROM %s"'
