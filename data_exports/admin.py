@@ -73,12 +73,17 @@ def sql_csv_export(modeladmin, request, queryset):
        #obj_qs = export.model.model_class().objects.all()
         fields = export.column_set.all().order_by("order").values_list('column', flat=True )
         fields_string = ','.join(fields)
-        table_name = export.model.model
-        outfile_path = outfile_dir+slugify(export.name)
+        table_name = export.model.app_label + export.model.model
+        outfile_path = outfile_dir+slugify(export.name)+'.csv'
+        db_name = cursor.db.__dict__['settings_dict']['NAME']
         sql_phrase = '''
-                     SELECT %s INTO OUTFILE %s FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+                     USE %s;
+                     SELECT %s
+                     INTO OUTFILE %s
+                     FIELDS TERMINATED BY ','
+                     OPTIONALLY ENCLOSED BY '"'
                      LINES TERMINATED BY '\n' FROM %s"'
-                     ''' % (fields_string, outfile_path, table_name)
+                     ''' % (db_name, fields_string, outfile_path, table_name)
         with open(outfile_path, "wb") as export_file:
             export_file.write(fields_string)
         cursor.execute(sql_phrase)
