@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import datetime
+import os
+import zipfile
+import StringIO
 
 from django.contrib import admin
 from data_exports.models import Export, Column, Format
 from data_exports.forms import ColumnForm, ColumnFormSet
-
+from django.db import connection
+from django.http import HttpResponse
 
 class ColumnInline(admin.TabularInline):
     extra = 0
@@ -13,14 +18,82 @@ class ColumnInline(admin.TabularInline):
     model = Column
 
 
+
+
+
+def zipfiles(outfile_dir):
+    # Files (local path) to put in the .zip
+    # We add all the files in outfile_dir
+    filenames = os.listdir(outfile_dir)
+
+    # Folder name in ZIP archive which contains the above files
+    # E.g [thearchive.zip]/somefiles/file2.txt
+    # FIXME: Set this to something better
+    zip_subdir = "exports"
+    zip_filename = "%s.zip" % zip_subdir
+
+    # Open StringIO to grab in-memory ZIP contents
+    s = StringIO.StringIO()
+
+    # The zip compressor
+    zf = zipfile.ZipFile(s, "w")
+
+    for fpath in filenames:
+        # Calculate path for file in zip
+        fdir, fname = os.path.split(fpath)
+        zip_path = os.path.join(zip_subdir, fname)
+
+        # Add file, at correct path
+        zf.write(fpath, zip_path)
+
+    # Must close zip for all contents to be written
+    zf.close()
+
+    # Grab ZIP file from in-memory, make response with correct MIME-type
+    resp = HttpResponse(s.getvalue(), mimetype = "application/x-zip-compressed")
+    # ..and correct content-disposition
+    resp['Content-Disposition'] = 'attachment; filename=%s' % zip_filename
+    return resp
+
+# Adding action to speedup the csv export functionality
+def sql_csv_export(modeladmin, request, queryset):
+    '''
+    Get the models and the export objects.
+    Generate the sql to create the csv files
+    Create the csv files in a dir in tmp named pert the request session
+    Zip the folder
+    Serve the folder to the user
+    '''
+    cursor = connection.cursor()
+    outfile_dir = "/tmp/%s/" % (str(request.session.id)+str(datetime.datetime.now()))
+    # Make the directory
+    os.mkdir(outfile_dir)
+    for export in queryset:
+       #obj_qs = export.model.model_class().objects.all()
+        fields = export.column_set.all().order_by("order").values_list('column', flat=True )
+        fields_string = ','.join(fields)
+        table_name = export.model.model
+        outfile_path = outfile_dir+export.name
+        sql_phrase = '''
+                     SELECT %s INTO OUTFILE %s FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+                     LINES TERMINATED BY '\n' FROM %s"'
+                     ''' % (fields_string, outfile_path, table_name)
+        with open(outfile_path, "wb") as export_file:
+            export_file.write(fields_string)
+        cursor.execute("SET Names utf-8")
+        cursor.execute(sql_phrase)
+    return zipfiles(outfile_dir)
+
+
 class ExportAdmin(admin.ModelAdmin):
     inlines = [ColumnInline]
     list_display = ['name', 'slug', 'model', 'export_format',
                     'get_export_link']
-    list_filter = ['export_format', 'model']
+    list_filter = ['name', 'export_format', 'model']
     prepopulated_fields = {"slug": ("name",)}
     readonly_fields = ['model']
     search_fields = ['name', 'slug', 'model']
+    actions = ['sql_csv_export']
 
     def get_readonly_fields(self, request, obj=None):
         """The model can't be changed once the export is created"""
@@ -35,6 +108,9 @@ class ExportAdmin(admin.ModelAdmin):
             self.inline_instances = self.get_inline_instances(request)
         for inline in self.inline_instances:
             yield inline.get_formset(request, obj)
+
+    def sql_csv_export(self, request, obj=None):
+        return sql_csv_export(self, request, obj)
 
     def response_add(self, request, obj, post_url_continue='../%s/'):
         """If we're adding, save must be "save and continue editing"
