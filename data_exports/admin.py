@@ -66,7 +66,7 @@ def sql_csv_export(modeladmin, request, queryset):
     cursor = connection.cursor()
     outfile_dir = "/tmp/%s/" % (request.META["CSRF_COOKIE"])
     # Make the directory
-    if not os.file.exists(outfile_dir):
+    if not os.path.exists(outfile_dir):
         os.mkdir(outfile_dir)
     for export in queryset:
        #obj_qs = export.model.model_class().objects.all()
