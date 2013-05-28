@@ -79,7 +79,6 @@ def sql_csv_export(modeladmin, request, queryset):
                      ''' % (fields_string, outfile_path, table_name)
         with open(outfile_path, "wb") as export_file:
             export_file.write(fields_string)
-        cursor.execute("SET Names utf-8")
         cursor.execute(sql_phrase)
     return zipfiles(outfile_dir)
 
