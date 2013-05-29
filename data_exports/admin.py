@@ -17,10 +17,6 @@ class ColumnInline(admin.TabularInline):
     formset = ColumnFormSet
     model = Column
 
-
-
-
-
 def zipfiles(outfile_dir):
     # Files (local path) to put in the .zip
     # We add all the files in outfile_dir
@@ -77,13 +73,12 @@ def sql_csv_export(modeladmin, request, queryset):
         outfile_path = outfile_dir+slugify(export.name)+'.csv'
         db_name = cursor.db.__dict__['settings_dict']['NAME']
         sql_phrase = '''
-                     USE %s;
                      SELECT %s
                      INTO OUTFILE %s
                      FIELDS TERMINATED BY ','
                      OPTIONALLY ENCLOSED BY '"'
                      LINES TERMINATED BY '\n' FROM %s"'
-                     ''' % (db_name, fields_string, outfile_path, table_name)
+                     ''' % (fields_string, outfile_path, table_name)
         with open(outfile_path, "wb") as export_file:
             export_file.write(fields_string)
         cursor.execute(sql_phrase)
