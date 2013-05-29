@@ -77,11 +77,13 @@ def sql_csv_export(modeladmin, request, queryset):
                      INTO OUTFILE %s
                      FIELDS TERMINATED BY ','
                      OPTIONALLY ENCLOSED BY '"'
-                     LINES TERMINATED BY '\n' FROM %s"'
+                     LINES TERMINATED BY '\n'
+                     FROM %s"'
                      ''' % (fields_string, outfile_path, table_name)
-        with open(outfile_path, "wb") as export_file:
-            export_file.write(fields_string)
         cursor.execute(sql_phrase)
+        with file(outfile_path, 'r') as original: data = original.read()
+        with file(outfile_path, 'w') as modified: modified.write(fields_string+"\n" + data)
+
     return zipfiles(outfile_dir)
 
 
