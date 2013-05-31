@@ -73,9 +73,7 @@ def sql_csv_export(modeladmin, request, queryset):
         outfile_path = outfile_dir+slugify(export.name)+'.csv'
         db_name = cursor.db.__dict__['settings_dict']['NAME']
         sql_phrase = '''
-                     SELECT %s
-                     INTO OUTFILE %s
-                     FIELDS TERMINATED BY ','
+                     SELECT %s INTO OUTFILE '%s' FIELDS TERMINATED BY ','
                      OPTIONALLY ENCLOSED BY '"'
                      LINES TERMINATED BY '\n'
                      FROM %s"'
