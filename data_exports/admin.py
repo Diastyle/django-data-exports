@@ -72,12 +72,10 @@ def sql_csv_export(modeladmin, request, queryset):
         table_name = export.model.app_label + export.model.model
         outfile_path = outfile_dir+slugify(export.name)+'.csv'
         db_name = cursor.db.__dict__['settings_dict']['NAME']
-        sql_phrase = '''
-                     SELECT %s INTO OUTFILE '%s' FIELDS TERMINATED BY ','
-                     OPTIONALLY ENCLOSED BY '"'
-                     LINES TERMINATED BY '\n'
-                     FROM %s"'
-                     ''' % (fields_string, outfile_path, table_name)
+        sql_phrase = ("SELECT %s INTO OUTFILE '%s'" 
+		      "FIELDS TERMINATED BY ','"
+                      "LINES TERMINATED BY '\n'"
+                      "FROM %s") % (fields_string, outfile_path, table_name)
         cursor.execute(sql_phrase)
         with file(outfile_path, 'r') as original: data = original.read()
         with file(outfile_path, 'w') as modified: modified.write(fields_string+"\n" + data)
